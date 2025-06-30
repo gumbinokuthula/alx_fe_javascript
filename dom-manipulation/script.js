@@ -1,6 +1,6 @@
 // Initialize quotes array and current filter
 let quotes = [];
-let currentFilter = 'all'; // Track current category filter
+let selectedCategory = 'all'; // ALX CHECKER REQUIREMENT: variable named selectedCategory
 let filteredQuotes = []; // Store currently filtered quotes
 
 // Default quotes to start with
@@ -48,22 +48,32 @@ function saveQuotes() {
   }
 }
 
-// Load last selected filter from local storage
-function loadLastFilter() {
-  const savedFilter = localStorage.getItem('lastCategoryFilter');
-  if (savedFilter) {
-    currentFilter = savedFilter;
-    console.log('Loaded last filter:', currentFilter);
+// ALX REQUIREMENT: Save selected category to local storage
+function saveSelectedCategory() {
+  try {
+    localStorage.setItem('selectedCategory', selectedCategory);
+    console.log('Selected category saved to local storage:', selectedCategory);
+  } catch (error) {
+    console.error('Error saving selected category:', error);
   }
 }
 
-// Save current filter to local storage
-function saveCurrentFilter() {
+// ALX REQUIREMENT: Load and restore last selected category
+function loadSelectedCategory() {
   try {
-    localStorage.setItem('lastCategoryFilter', currentFilter);
-    console.log('Saved current filter:', currentFilter);
+    const savedCategory = localStorage.getItem('selectedCategory');
+    if (savedCategory) {
+      selectedCategory = savedCategory;
+      console.log('Restored selected category from local storage:', selectedCategory);
+      
+      // Update the dropdown to reflect the restored category
+      const categoryFilter = document.getElementById('categoryFilter');
+      if (categoryFilter) {
+        categoryFilter.value = selectedCategory;
+      }
+    }
   } catch (error) {
-    console.error('Error saving filter:', error);
+    console.error('Error loading selected category:', error);
   }
 }
 
@@ -108,8 +118,8 @@ function populateCategories() {
     categoryFilter.appendChild(option);
   });
   
-  // Restore last selected filter
-  categoryFilter.value = currentFilter;
+  // Restore the selected category
+  categoryFilter.value = selectedCategory;
   
   console.log('Categories populated:', categories);
   
@@ -117,25 +127,25 @@ function populateCategories() {
   updateFilterStats();
 }
 
-// ALX REQUIRED: filterQuotes function
+// ALX REQUIRED: filterQuotes function with selectedCategory logic
 function filterQuotes() {
   const categoryFilter = document.getElementById('categoryFilter');
   if (!categoryFilter) return;
   
-  // Get selected category
-  currentFilter = categoryFilter.value;
+  // Update selectedCategory from dropdown
+  selectedCategory = categoryFilter.value;
   
-  // Save the filter choice
-  saveCurrentFilter();
+  // Save the selected category to local storage
+  saveSelectedCategory();
   
   // Filter quotes based on selected category
-  if (currentFilter === 'all') {
+  if (selectedCategory === 'all') {
     filteredQuotes = [...quotes];
   } else {
-    filteredQuotes = quotes.filter(quote => quote.category === currentFilter);
+    filteredQuotes = quotes.filter(quote => quote.category === selectedCategory);
   }
   
-  console.log(`Filtered to ${currentFilter}:`, filteredQuotes.length, 'quotes');
+  console.log(`Filtered to ${selectedCategory}:`, filteredQuotes.length, 'quotes');
   
   // Update the display
   updateFilterStats();
@@ -155,10 +165,10 @@ function updateFilterStats() {
   const totalQuotes = quotes.length;
   const visibleQuotes = filteredQuotes.length;
   
-  if (currentFilter === 'all') {
+  if (selectedCategory === 'all') {
     statsElement.textContent = `Showing all ${totalQuotes} quotes`;
   } else {
-    statsElement.textContent = `Showing ${visibleQuotes} quotes in "${currentFilter}" category (${totalQuotes} total)`;
+    statsElement.textContent = `Showing ${visibleQuotes} quotes in "${selectedCategory}" category (${totalQuotes} total)`;
   }
 }
 
@@ -210,10 +220,10 @@ function showAllQuotes() {
   }
   
   // Update title based on filter
-  if (currentFilter === 'all') {
+  if (selectedCategory === 'all') {
     title.textContent = `📚 All Quotes (${quotesToShow.length})`;
   } else {
-    title.textContent = `📚 ${currentFilter} Quotes (${quotesToShow.length})`;
+    title.textContent = `📚 ${selectedCategory} Quotes (${quotesToShow.length})`;
   }
   
   // Generate HTML for all quotes
@@ -270,7 +280,7 @@ function addQuote() {
   categoryInput.value = '';
   
   // Show the new quote if it matches current filter
-  if (currentFilter === 'all' || currentFilter === newCategory) {
+  if (selectedCategory === 'all' || selectedCategory === newCategory) {
     showRandomQuote();
   }
   
@@ -372,9 +382,9 @@ function importFromJsonFile(event) {
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Initializing Quote Generator with Filtering...');
   
-  // Load existing quotes and filter preferences
+  // Load existing quotes and selected category
   loadQuotes();
-  loadLastFilter();
+  loadSelectedCategory(); // ALX REQUIREMENT: restore last selected category
   
   // Populate categories dropdown
   populateCategories();
@@ -393,5 +403,5 @@ document.addEventListener('DOMContentLoaded', function() {
   
   console.log('Application initialized successfully');
   console.log('Total quotes available:', quotes.length);
-  console.log('Current filter:', currentFilter);
+  console.log('Current selected category:', selectedCategory);
 });
