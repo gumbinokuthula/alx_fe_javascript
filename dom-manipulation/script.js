@@ -6,9 +6,8 @@ let quotes = [
   ];
   
   // Step 2: Function to display a random quote
-  function displayRandomQuote() {
+  function showRandomQuote() {
     const quoteDisplay = document.getElementById("quoteDisplay");
-    quoteDisplay.innerHTML = "<p>Test quote display</p>";
   
     if (quotes.length === 0) {
       quoteDisplay.innerHTML = "No quotes available.";
@@ -37,12 +36,12 @@ let quotes = [
     document.getElementById("newQuoteCategory").value = "";
   
     // Optionally show the new quote immediately
-    displayRandomQuote();
+    showRandomQuote();
   }
   
   // Step 4: Event listener for “Show New Quote” button
   document.addEventListener("DOMContentLoaded", function () {
     const button = document.getElementById("newQuote");
-    button.addEventListener("click", displayRandomQuote);
+    button.addEventListener("click", showRandomQuote);
   });
   
