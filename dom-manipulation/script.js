@@ -46,7 +46,24 @@ function showRandomQuote() {
   sessionStorage.setItem('lastViewedQuote', JSON.stringify(quote));
 }
 
-// Step 5: Function to add a new quote from the form
+// Step 5: ALX REQUIRED - createAddQuoteForm function
+function createAddQuoteForm() {
+  // This function creates the form structure that ALX expects
+  // Since we already have the form in HTML, we'll just ensure it's properly connected
+  const formContainer = document.createElement('div');
+  formContainer.innerHTML = `
+    <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
+    <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
+    <button onclick="addQuote()">Add Quote</button>
+  `;
+  
+  // If form doesn't exist, add it to the body
+  if (!document.getElementById('newQuoteText')) {
+    document.body.appendChild(formContainer);
+  }
+}
+
+// Step 6: Function to add a new quote from the form
 function addQuote() {
   const newText = document.getElementById("newQuoteText").value.trim();
   const newCategory = document.getElementById("newQuoteCategory").value.trim();
@@ -56,23 +73,23 @@ function addQuote() {
     return;
   }
 
-  // Add the new quote to our collection
+  // Add the new quote to our collection (ADD TO ARRAY)
   quotes.push({ text: newText, category: newCategory });
   
   // IMPORTANT: Save to storage immediately so we don't lose it!
   saveQuotes();
 
+  // UPDATE THE DOM - Show the new quote immediately
+  showRandomQuote();
+  
   // Clear input fields
   document.getElementById("newQuoteText").value = "";
   document.getElementById("newQuoteCategory").value = "";
-
-  // Show the new quote
-  showRandomQuote();
   
   alert("Quote added and saved!");
 }
 
-// Step 6: EXPORT function - Download quotes as a file
+// Step 7: EXPORT function - Download quotes as a file
 function exportToJsonFile() {
   // Think: Take all our quotes and put them in a "backpack" (file)
   const dataStr = JSON.stringify(quotes, null, 2); // Pretty format with spaces
@@ -95,7 +112,7 @@ function exportToJsonFile() {
   alert("Quotes exported successfully!");
 }
 
-// Step 7: IMPORT function - Upload quotes from a file
+// Step 8: IMPORT function - Upload quotes from a file
 function importFromJsonFile(event) {
   const file = event.target.files[0];
   
@@ -132,17 +149,22 @@ function importFromJsonFile(event) {
   fileReader.readAsText(file);
 }
 
-// Step 8: Initialize everything when page loads
+// Step 9: Initialize everything when page loads
 document.addEventListener("DOMContentLoaded", function () {
   // First, load any saved quotes
   loadQuotes();
   
+  // Create the add quote form (ALX requirement)
+  createAddQuoteForm();
+  
   // Show a random quote immediately
   showRandomQuote();
   
-  // Connect the "Show New Quote" button
-  const button = document.getElementById("newQuote");
-  button.addEventListener("click", showRandomQuote);
+  // EVENT LISTENER: Connect the "Show New Quote" button (ALX requirement)
+  const newQuoteButton = document.getElementById("newQuote");
+  if (newQuoteButton) {
+    newQuoteButton.addEventListener("click", showRandomQuote);
+  }
   
   console.log("Quote Generator initialized with", quotes.length, "quotes");
 });
