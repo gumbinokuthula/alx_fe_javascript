@@ -1,165 +1,823 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dynamic Quote Generator with Filtering</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f5f5f5;
-    }
-    
-    .container {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    #quoteDisplay {
-      background: #e3f2fd;
-      padding: 20px;
-      border-radius: 8px;
-      margin: 20px 0;
-      min-height: 100px;
-      border-left: 4px solid #2196f3;
-    }
-    
-    .quote-text {
-      font-size: 18px;
-      font-style: italic;
-      margin-bottom: 10px;
-      line-height: 1.6;
-    }
-    
-    .quote-category {
-      font-weight: bold;
-      color: #666;
-      text-align: right;
-    }
-    
-    .filter-section {
-      background: #fff3e0;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      border-left: 4px solid #ff9800;
-    }
-    
-    button {
-      background: #2196f3;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      margin: 5px;
-      font-size: 14px;
-    }
-    
-    button:hover {
-      background: #1976d2;
-    }
-    
-    select {
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-      margin: 5px;
-      min-width: 200px;
-    }
-    
-    input[type="text"] {
-      width: 300px;
-      padding: 8px;
-      margin: 5px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    
-    input[type="file"] {
-      margin: 10px 0;
-    }
-    
-    .stats {
-      background: #e8f5e8;
-      padding: 10px;
-      border-radius: 4px;
-      margin: 10px 0;
-      text-align: center;
-      font-size: 14px;
-      color: #2e7d32;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Quote Generator with Server Sync</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .sync-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+        }
+
+        .sync-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sync-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .sync-dot.syncing {
+            background: #ffc107;
+            animation: spin 1s linear infinite;
+        }
+
+        .sync-dot.error {
+            background: #dc3545;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .quote-display {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quote-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            50% { transform: translate(-50%, -50%) rotate(180deg); }
+        }
+
+        .quote-text {
+            font-size: 1.4em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-style: italic;
+            position: relative;
+            z-index: 1;
+        }
+
+        .quote-author {
+            font-size: 1.1em;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quote-form {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 350px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .notification.warning {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+        }
+
+        .notification.error {
+            background: linear-gradient(45deg, #dc3545, #e83e8c);
+        }
+
+        .notification.info {
+            background: linear-gradient(45deg, #17a2b8, #6f42c1);
+        }
+
+        .conflict-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .conflict-dialog.show {
+            display: flex;
+        }
+
+        .conflict-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .conflict-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .quote-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .quote-version {
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .quote-version.local {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+
+        .quote-version.server {
+            border-color: #28a745;
+            background: #e8f5e8;
+        }
+
+        .quote-version h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .quote-comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .sync-status {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
-
 <body>
-  <h1>Dynamic Quote Generator with Filtering</h1>
+    <div class="container">
+        <h1>🌟 Dynamic Quote Generator</h1>
+        
+        <!-- Sync Status -->
+        <div class="sync-status">
+            <div class="sync-indicator">
+                <div class="sync-dot" id="syncDot"></div>
+                <span id="syncStatus">Connected - Auto-sync every 30s</span>
+            </div>
+            <div>
+                <button id="manualSyncBtn">🔄 Sync Now</button>
+                <span id="lastSync">Last sync: Never</span>
+            </div>
+        </div>
 
-  <!-- Filter Section -->
-  <div class="container filter-section">
-    <h2>🔍 Filter Quotes by Category</h2>
-    <div>
-      <label for="categoryFilter">Choose Category:</label>
-      <select id="categoryFilter" onchange="filterQuotes()">
-        <option value="all">All Categories</option>
-        <!-- Dynamically populated categories -->
-      </select>
-      <div class="stats" id="filterStats">
-        Loading quotes...
-      </div>
+        <!-- Quote Display -->
+        <div class="quote-display">
+            <div class="quote-text" id="quoteText">Click "Show New Quote" to get started!</div>
+            <div class="quote-author" id="quoteAuthor">- Quote Generator</div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="newQuoteBtn">🎲 Show New Quote</button>
+            <button id="addQuoteBtn">➕ Add Quote</button>
+            <button id="exportBtn">📄 Export Quotes</button>
+            <button id="importBtn">📁 Import Quotes</button>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+        </div>
+
+        <!-- Add Quote Form -->
+        <div class="quote-form" id="quoteForm" style="display: none;">
+            <h3>Add New Quote</h3>
+            <div class="form-group">
+                <label for="newQuoteText">Quote Text:</label>
+                <textarea id="newQuoteText" placeholder="Enter the quote..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="newQuoteAuthor">Author:</label>
+                <input type="text" id="newQuoteAuthor" placeholder="Enter the author's name...">
+            </div>
+            <div class="form-group">
+                <label for="newQuoteCategory">Category:</label>
+                <input type="text" id="newQuoteCategory" placeholder="Enter category (optional)...">
+            </div>
+            <div class="controls">
+                <button id="saveQuoteBtn">💾 Save Quote</button>
+                <button id="cancelQuoteBtn">❌ Cancel</button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalQuotes">0</div>
+                <div class="stat-label">Total Quotes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="serverQuotes">0</div>
+                <div class="stat-label">Server Quotes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="syncCount">0</div>
+                <div class="stat-label">Successful Syncs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="conflictsResolved">0</div>
+                <div class="stat-label">Conflicts Resolved</div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Quote Display Area -->
-  <div class="container">
-    <h2>📖 Current Quote</h2>
-    <div id="quoteDisplay">Click "Show New Quote" to start!</div>
-    <div>
-      <button id="newQuote">Show New Quote</button>
-      <button onclick="showAllQuotes()">Show All Quotes</button>
+    <!-- Notification System -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Conflict Resolution Dialog -->
+    <div class="conflict-dialog" id="conflictDialog">
+        <div class="conflict-content">
+            <h3>🔄 Data Conflict Detected</h3>
+            <p>Changes have been made both locally and on the server. Please choose how to resolve this conflict:</p>
+            
+            <div class="quote-comparison" id="conflictComparison">
+                <!-- Conflict details will be inserted here -->
+            </div>
+            
+            <div class="conflict-options">
+                <button id="useServerBtn">🌐 Use Server Version</button>
+                <button id="useLocalBtn">💻 Use Local Version</button>
+                <button id="mergeBtn">🔀 Merge Both</button>
+                <button id="cancelConflictBtn">❌ Cancel</button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Add New Quote Form -->
-  <div class="container">
-    <h2>➕ Add New Quote</h2>
-    <div>
-      <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
-      <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
-      <button onclick="addQuote()">Add Quote</button>
-    </div>
-  </div>
+    <script>
+        class QuoteGeneratorWithSync {
+            constructor() {
+                this.quotes = [];
+                this.serverQuotes = [];
+                this.currentQuoteIndex = 0;
+                this.syncInterval = null;
+                this.conflictQueue = [];
+                this.stats = {
+                    totalQuotes: 0,
+                    serverQuotes: 0,
+                    syncCount: 0,
+                    conflictsResolved: 0
+                };
+                
+                this.init();
+            }
 
-  <!-- All Quotes Display (for filtered view) -->
-  <div class="container" id="allQuotesContainer" style="display: none;">
-    <h2 id="allQuotesTitle">📚 All Quotes</h2>
-    <div id="allQuotesDisplay"></div>
-  </div>
+            init() {
+                this.loadLocalQuotes();
+                this.setupEventListeners();
+                this.startAutoSync();
+                this.updateStats();
+                this.showRandomQuote();
+            }
 
-  <!-- Import/Export Section -->
-  <div class="container">
-    <h2>💾 Save & Load Your Quotes</h2>
-    
-    <!-- Export Button -->
-    <button onclick="exportToJsonFile()">Export Quotes to JSON</button>
-    
-    <!-- Import File Input -->
-    <div>
-      <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
-      <label for="importFile">Import quotes from JSON file</label>
-    </div>
-  </div>
+            setupEventListeners() {
+                document.getElementById('newQuoteBtn').addEventListener('click', () => this.showRandomQuote());
+                document.getElementById('addQuoteBtn').addEventListener('click', () => this.toggleAddQuoteForm());
+                document.getElementById('saveQuoteBtn').addEventListener('click', () => this.saveNewQuote());
+                document.getElementById('cancelQuoteBtn').addEventListener('click', () => this.toggleAddQuoteForm());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportQuotes());
+                document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+                document.getElementById('importFile').addEventListener('change', (e) => this.importQuotes(e));
+                document.getElementById('manualSyncBtn').addEventListener('click', () => this.syncWithServer());
+                
+                // Conflict resolution handlers
+                document.getElementById('useServerBtn').addEventListener('click', () => this.resolveConflict('server'));
+                document.getElementById('useLocalBtn').addEventListener('click', () => this.resolveConflict('local'));
+                document.getElementById('mergeBtn').addEventListener('click', () => this.resolveConflict('merge'));
+                document.getElementById('cancelConflictBtn').addEventListener('click', () => this.closeConflictDialog());
+            }
 
-  <!-- JavaScript File -->
-  <script src="script.js"></script>
+            loadLocalQuotes() {
+                const savedQuotes = JSON.parse(localStorage.getItem('quotes') || '[]');
+                const savedStats = JSON.parse(localStorage.getItem('quoteStats') || '{}');
+                
+                this.quotes = savedQuotes.length > 0 ? savedQuotes : this.getDefaultQuotes();
+                this.stats = { ...this.stats, ...savedStats };
+                
+                this.saveToLocalStorage();
+            }
+
+            getDefaultQuotes() {
+                return [
+                    { id: 1, text: "The only way to do great work is to love what you do.", author: "Steve Jobs", category: "motivation", timestamp: Date.now() },
+                    { id: 2, text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs", category: "innovation", timestamp: Date.now() },
+                    { id: 3, text: "Life is what happens to you while you're busy making other plans.", author: "John Lennon", category: "life", timestamp: Date.now() },
+                    { id: 4, text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt", category: "dreams", timestamp: Date.now() },
+                    { id: 5, text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle", category: "inspiration", timestamp: Date.now() }
+                ];
+            }
+
+            saveToLocalStorage() {
+                localStorage.setItem('quotes', JSON.stringify(this.quotes));
+                localStorage.setItem('quoteStats', JSON.stringify(this.stats));
+            }
+
+            showRandomQuote() {
+                if (this.quotes.length === 0) return;
+                
+                this.currentQuoteIndex = Math.floor(Math.random() * this.quotes.length);
+                const quote = this.quotes[this.currentQuoteIndex];
+                
+                document.getElementById('quoteText').textContent = `"${quote.text}"`;
+                document.getElementById('quoteAuthor').textContent = `- ${quote.author}`;
+            }
+
+            toggleAddQuoteForm() {
+                const form = document.getElementById('quoteForm');
+                const isVisible = form.style.display !== 'none';
+                
+                form.style.display = isVisible ? 'none' : 'block';
+                
+                if (!isVisible) {
+                    document.getElementById('newQuoteText').value = '';
+                    document.getElementById('newQuoteAuthor').value = '';
+                    document.getElementById('newQuoteCategory').value = '';
+                }
+            }
+
+            saveNewQuote() {
+                const text = document.getElementById('newQuoteText').value.trim();
+                const author = document.getElementById('newQuoteAuthor').value.trim();
+                const category = document.getElementById('newQuoteCategory').value.trim() || 'general';
+                
+                if (!text || !author) {
+                    this.showNotification('Please fill in both quote text and author!', 'error');
+                    return;
+                }
+                
+                const newQuote = {
+                    id: Date.now(),
+                    text,
+                    author,
+                    category,
+                    timestamp: Date.now(),
+                    source: 'local'
+                };
+                
+                this.quotes.push(newQuote);
+                this.saveToLocalStorage();
+                this.toggleAddQuoteForm();
+                this.updateStats();
+                this.showNotification('Quote added successfully!', 'success');
+                
+                // Sync with server after adding
+                this.syncWithServer();
+            }
+
+            exportQuotes() {
+                const dataStr = JSON.stringify(this.quotes, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `quotes_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                this.showNotification('Quotes exported successfully!', 'success');
+            }
+
+            async importQuotes(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                try {
+                    const text = await file.text();
+                    const importedQuotes = JSON.parse(text);
+                    
+                    if (!Array.isArray(importedQuotes)) {
+                        throw new Error('Invalid file format');
+                    }
+                    
+                    // Add imported quotes with new IDs to avoid conflicts
+                    const newQuotes = importedQuotes.map(quote => ({
+                        ...quote,
+                        id: Date.now() + Math.random(),
+                        timestamp: Date.now(),
+                        source: 'imported'
+                    }));
+                    
+                    this.quotes.push(...newQuotes);
+                    this.saveToLocalStorage();
+                    this.updateStats();
+                    this.showNotification(`Imported ${newQuotes.length} quotes successfully!`, 'success');
+                    
+                    // Sync with server after importing
+                    this.syncWithServer();
+                } catch (error) {
+                    this.showNotification('Error importing quotes: Invalid file format', 'error');
+                }
+                
+                event.target.value = '';
+            }
+
+            async syncWithServer() {
+                this.updateSyncStatus('syncing', 'Syncing with server...');
+                
+                try {
+                    // Simulate fetching from server (using JSONPlaceholder)
+                    const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+                    const posts = await response.json();
+                    
+                    // Convert posts to quote format for simulation
+                    this.serverQuotes = posts.slice(0, 10).map((post, index) => ({
+                        id: 1000 + index,
+                        text: post.title.charAt(0).toUpperCase() + post.title.slice(1) + '.',
+                        author: `User ${post.userId}`,
+                        category: 'server',
+                        timestamp: Date.now() - Math.random() * 86400000, // Random time in last 24h
+                        source: 'server'
+                    }));
+                    
+                    // Check for conflicts and merge data
+                    await this.handleDataMerging();
+                    
+                    this.stats.syncCount++;
+                    this.stats.serverQuotes = this.serverQuotes.length;
+                    this.saveToLocalStorage();
+                    this.updateStats();
+                    
+                    this.updateSyncStatus('success', 'Sync completed successfully');
+                    document.getElementById('lastSync').textContent = `Last sync: ${new Date().toLocaleTimeString()}`;
+                    this.showNotification('Data synchronized successfully!', 'success');
+                    
+                } catch (error) {
+                    this.updateSyncStatus('error', 'Sync failed - Retrying in 1 minute');
+                    this.showNotification('Sync failed: ' + error.message, 'error');
+                    
+                    // Retry after 1 minute
+                    setTimeout(() => this.syncWithServer(), 60000);
+                }
+            }
+
+            async handleDataMerging() {
+                // Simple conflict detection: check if server has newer data
+                const conflicts = [];
+                const mergedQuotes = [...this.quotes];
+                
+                for (const serverQuote of this.serverQuotes) {
+                    const existingQuote = this.quotes.find(q => q.id === serverQuote.id);
+                    
+                    if (existingQuote) {
+                        // Check for conflicts (different timestamps or content)
+                        if (existingQuote.timestamp !== serverQuote.timestamp || 
+                            existingQuote.text !== serverQuote.text) {
+                            conflicts.push({
+                                local: existingQuote,
+                                server: serverQuote
+                            });
+                        }
+                    } else {
+                        // New quote from server, add it
+                        mergedQuotes.push(serverQuote);
+                    }
+                }
+                
+                if (conflicts.length > 0) {
+                    // Handle conflicts based on strategy
+                    await this.handleConflicts(conflicts);
+                } else {
+                    // No conflicts, update quotes
+                    this.quotes = mergedQuotes;
+                    this.saveToLocalStorage();
+                }
+            }
+
+            async handleConflicts(conflicts) {
+                // For demo purposes, we'll show conflict resolution for the first conflict
+                // In a real app, you might batch process or use a more sophisticated strategy
+                
+                if (conflicts.length > 0) {
+                    this.showConflictDialog(conflicts[0]);
+                    
+                    // Auto-resolve remaining conflicts with server precedence
+                    for (let i = 1; i < conflicts.length; i++) {
+                        this.resolveConflictAutomatically(conflicts[i], 'server');
+                    }
+                }
+            }
+
+            showConflictDialog(conflict) {
+                const dialog = document.getElementById('conflictDialog');
+                const comparison = document.getElementById('conflictComparison');
+                
+                comparison.innerHTML = `
+                    <div class="quote-version local">
+                        <h4>🖥️ Your Local Version</h4>
+                        <p><strong>Text:</strong> "${conflict.local.text}"</p>
+                        <p><strong>Author:</strong> ${conflict.local.author}</p>
+                        <p><strong>Modified:</strong> ${new Date(conflict.local.timestamp).toLocaleString()}</p>
+                    </div>
+                    <div class="quote-version server">
+                        <h4>🌐 Server Version</h4>
+                        <p><strong>Text:</strong> "${conflict.server.text}"</p>
+                        <p><strong>Author:</strong> ${conflict.server.author}</p>
+                        <p><strong>Modified:</strong> ${new Date(conflict.server.timestamp).toLocaleString()}</p>
+                    </div>
+                `;
+                
+                // Store current conflict for resolution
+                this.currentConflict = conflict;
+                dialog.classList.add('show');
+            }
+
+            resolveConflict(strategy) {
+                if (!this.currentConflict) return;
+                
+                const conflict = this.currentConflict;
+                const quoteIndex = this.quotes.findIndex(q => q.id === conflict.local.id);
+                
+                switch (strategy) {
+                    case 'server':
+                        if (quoteIndex !== -1) {
+                            this.quotes[quoteIndex] = { ...conflict.server };
+                        }
+                        this.showNotification('Conflict resolved: Server version kept', 'info');
+                        break;
+                        
+                    case 'local':
+                        // Keep local version, no changes needed
+                        this.showNotification('Conflict resolved: Local version kept', 'info');
+                        break;
+                        
+                    case 'merge':
+                        if (quoteIndex !== -1) {
+                            // Simple merge strategy: combine text and keep newer timestamp
+                            this.quotes[quoteIndex] = {
+                                ...conflict.local,
+                                text: conflict.local.text + ' [Merged with: ' + conflict.server.text + ']',
+                                timestamp: Math.max(conflict.local.timestamp, conflict.server.timestamp)
+                            };
+                        }
+                        this.showNotification('Conflict resolved: Versions merged', 'info');
+                        break;
+                }
+                
+                this.stats.conflictsResolved++;
+                this.saveToLocalStorage();
+                this.updateStats();
+                this.closeConflictDialog();
+            }
+
+            resolveConflictAutomatically(conflict, strategy) {
+                // Auto-resolve conflicts without user interaction
+                const quoteIndex = this.quotes.findIndex(q => q.id === conflict.local.id);
+                
+                if (strategy === 'server' && quoteIndex !== -1) {
+                    this.quotes[quoteIndex] = { ...conflict.server };
+                    this.stats.conflictsResolved++;
+                }
+            }
+
+            closeConflictDialog() {
+                document.getElementById('conflictDialog').classList.remove('show');
+                this.currentConflict = null;
+            }
+
+            startAutoSync() {
+                // Sync every 30 seconds
+                this.syncInterval = setInterval(() => {
+                    this.syncWithServer();
+                }, 30000);
+                
+                // Initial sync after 3 seconds
+                setTimeout(() => this.syncWithServer(), 3000);
+            }
+
+            updateSyncStatus(status, message) {
+                const dot = document.getElementById('syncDot');
+                const statusText = document.getElementById('syncStatus');
+                
+                dot.className = `sync-dot ${status}`;
+                statusText.textContent = message;
+            }
+
+            updateStats() {
+                this.stats.totalQuotes = this.quotes.length;
+                
+                document.getElementById('totalQuotes').textContent = this.stats.totalQuotes;
+                document.getElementById('serverQuotes').textContent = this.stats.serverQuotes;
+                document.getElementById('syncCount').textContent = this.stats.syncCount;
+                document.getElementById('conflictsResolved').textContent = this.stats.conflictsResolved;
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 4000);
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new QuoteGeneratorWithSync();
+        });
+    </script>
 </body>
-
 </html>
